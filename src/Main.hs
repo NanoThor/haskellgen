@@ -1,96 +1,80 @@
-{-# LANGUAGE NamedFieldPuns, TupleSections #-}
-
---
--- Copyright (c) 2006 Don Stewart - http://www.cse.unsw.edu.au/~dons/
--- GPL version 2 or later (see http://www.gnu.org/copyleft/gpl.html)
---
-
-import System.Environment
-import Control.Applicative
-import Control.Arrow (second)
-import Control.Monad (liftM, replicateM)
+import System.Random
+import Data.List
+import Control.Monad
 import Control.Monad.Random
-import Data.Function (on)
-import Data.List (minimumBy, sortBy, nub, (\\))
-import Data.Ord (comparing)
-import Text.Printf (printf)
+import Graph
+
+-- =====================================================================
+-- Graph Stuffs
+-- =====================================================================
 
 
-type Gene = String
-target :: Gene
-target = "Hello, world!"
 
-mate :: RandomGen g => Gene -> Gene -> Rand g Gene
-mate g1 g2 = (++) <$> flip take g1 <*> flip drop g2 <$> pivot
-  where pivot = getRandomR (0, length g1 - 1)
 
-mutate :: RandomGen g => Gene -> Rand g Gene
-mutate g = (uncurry (++) .) . second . (:) <$> delta <*> parts
-  where
-    delta = getRandomR (' ', 'z')
-    idx = getRandomR (0, length g - 1)
-    parts = second tail . flip splitAt g <$> idx
+-- =====================================================================
+-- Gene Stuffs
+-- =====================================================================
+type Gene = [Int]
 
-fitness :: Gene -> Int
-fitness = sum . map abs . zipWith ((-) `on` fromEnum) target
+randomGene :: [Int] -> IO Gene
+randomGene [] = error "nã é possível realizar esta operação"
+randomGene [a] = return [a]
+randomGene v =
+  do
+    r <- randomIO :: IO Int
+    let
+      p = mod r (length v)
+      (le,ld) = splitAt p v
+    x <- randomGene (le ++ tail ld)
+    return (head ld : x)
 
-randomGene :: RandomGen g => Rand g Gene
-randomGene = replicateM (length target) $ getRandomR (' ', 'z')
 
-data PopInfo = PopInfo { size :: Int, crossover :: Float, elitism :: Float, mutation :: Float }
 
-type Population = (PopInfo, [Gene])
+-- =====================================================================
+-- Population Stuffs
+-- =====================================================================
+
+data PopInfo = PopInfo { size :: Int, crossoverFactor :: Float, elitism :: Float, mutation :: Float }
 defaultPop :: PopInfo
 defaultPop = PopInfo 1024 0.8 0.1 0.03
 
-randomPop :: RandomGen g => PopInfo -> Rand g Population
-randomPop = liftA2 (,) <$> pure <*> flip replicateM randomGene . size
+data Population = Population {info :: PopInfo, genes :: [Gene]}
 
-tournamentSize :: Int
-tournamentSize = 3
+-- randomPop :: PopInfo -> IO Population
+-- randomPop pinfo = Population pinfo
 
-tournamentSelection :: RandomGen g => Population -> Rand g Gene
-tournamentSelection (info, genes) =
-   minimumBy (comparing fitness) .  map (genes !!) <$>
-   replicateM tournamentSize (getRandomR (0, size info - 1))
+-- =====================================================================
+-- crossover functions
+-- =====================================================================
+getRandom' :: IO Float
+getRandom' =
+  do
+    g <- randomIO :: IO Word
+    return (fromIntegral g / fromIntegral (maxBound :: Word))
 
-twoM :: Monad m => m a -> m (a, a)
-twoM = liftM (\[x,y] -> (x,y)) . replicateM 2
+getPivot :: Int -> IO Int
+getPivot l = do x <- getRandom'
+                return $ round (x* fromIntegral l)
 
-selectParents :: RandomGen g => Population -> Rand g (Gene, Gene)
-selectParents = twoM . tournamentSelection
+crossover :: Gene -> Gene -> IO (Gene, Gene)
+crossover l1 l2 =
+  do
+    s <- getPivot (length l1)
+    return (cross s l1 l2 , cross s l2 l1)
 
-evolve :: RandomGen g => Population -> Rand g Population
-evolve p@(info@(PopInfo{size, crossover, elitism, mutation}), genes) =
-  (info,) . sortBy (comparing fitness) . (take idx genes ++) <$> replicateM (size - idx) (twoM getRandom >>= go)
-  where
-    idx = round (fromIntegral size * elitism)
-    go (r1,r2)
-      | r1 <= crossover =  selectParents p >>= uncurry mate >>= addChild r2
-      | otherwise = addMutation r2
-    addChild r c
-      | r <= mutation = mutate c
-      | otherwise = return c
-    addMutation r
-      | r <= mutation = mutate . (genes !!) =<< getRandomR (idx, size - 1)
-      | otherwise = (genes !!) <$> getRandomR (idx, size - 1)
+cross :: Int -> Gene -> Gene -> Gene
+cross p str1 str2 = take p str1 ++ drop p str2
 
-iterateUntil :: Monad m => (a -> Bool) -> (a -> m a) -> a -> m a
-iterateUntil stop f = go
-  where
-  go x
-    | stop x = return x
-    | otherwise = f x >>= go
+-- =====================================================================
+-- MAIN
+-- =====================================================================
+main :: IO ()
+main = return ()
 
-maxGenerations :: Int
-maxGenerations = 16384
 
-main::IO()
-main = evalRandIO (randomPop defaultPop >>= iterateUntil done step . (, 0)) >>= result
-  where
-    step (p,gen) = (,) <$> evolve p <*> pure (gen+1)
-    done ((_, g:_), generation) = generation == maxGenerations || fitness g == 0
-    result ((_, g:_), generation)
-      | generation == maxGenerations = putStrLn "Maximum generations reached without success."
-      | fitness g == 0 = printf "Reached target (%d): %s\n" generation g
-      | otherwise = putStrLn "Evolution is hard. Let's go shopping."
+
+-- main :: IO()
+-- main =
+--   do
+--     lines <- crossover [10..19] [20..29]
+--     print lines
