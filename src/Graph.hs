@@ -2,7 +2,7 @@ module Graph where
 import System.IO
 import Data.Char
 
-data Graph = Graph { vcount :: Int,  edges :: [[Int]] } deriving (Show, Eq)
+data Graph = Graph { vcount :: Int,  edges :: [[Int]], startVertice :: Int } deriving (Show, Eq)
 
 getEdgeValue :: Int -> Int -> Graph -> Int
 getEdgeValue x y g = (edges g !! x ) !! y
@@ -11,11 +11,13 @@ loadGraphFromFile :: FilePath -> IO Graph
 loadGraphFromFile path =
   do
     hFile <- openFile path ReadMode
-    vertCount <- hGetLine hFile
-    let vertCount' = read vertCount :: Int
+    infoLine <- hGetLine hFile
+    let infoLine' = parseLine infoLine
+    let vertCount' = head infoLine'
+    let startVertice = infoLine'!!1
     edges <- parseFileEdgeLine hFile vertCount'
     hClose hFile
-    return (Graph vertCount' edges)
+    return (Graph vertCount' edges startVertice)
 
 
 parseFileEdgeLine :: Handle -> Int -> IO [[Int]]

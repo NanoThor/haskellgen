@@ -28,7 +28,12 @@ randomGene v =
     x <- randomGene (le ++ tail ld)
     return (head ld : x)
 
+fitness :: Gene -> Graph -> Int
+fitness gene graph = fitaux (startVertice graph) gene graph
 
+fitaux :: Int -> Gene -> Graph -> Int
+fitaux v [] graph = getEdgeValue v (startVertice graph) graph
+fitaux v gene graph = getEdgeValue v (head gene) graph + fitaux (head gene) (tail gene) graph
 
 -- =====================================================================
 -- Population Stuffs
