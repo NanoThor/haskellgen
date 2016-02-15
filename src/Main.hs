@@ -42,21 +42,24 @@ data PopInfo = PopInfo { popSize :: Int, crossoverFactor :: Float, elitism :: Fl
 defaultPop :: PopInfo
 defaultPop = PopInfo 1024 0.8 0.1 0.03
 
-data Population = Population {info :: PopInfo, genes :: [IO Gene]}
+data Population = Population {info :: PopInfo, genes :: [Gene]} deriving (Show, Eq)
 
-randomPop :: PopInfo -> Graph -> Population
+randomPop :: PopInfo -> Graph -> IO Population
 randomPop pinfo graph =
-  let
-    genePopulation = randomPopAux (popSize pinfo) (vcount graph)
-  in
-    Population pinfo genePopulation
+  do
+    genePopulation <- randomPopAux (popSize pinfo) (vcount graph)
+    return (Population pinfo genePopulation)
 
 -- q : Quantidade :: Int
 -- m : Maximo :: Int
 -- retorno : Lista de Genes Gerados :: [Gene]
-randomPopAux :: Int -> Int -> [IO Gene]
-randomPopAux 0 _ = []
-randomPopAux m q = (randomGene [0..(q-1)]) : randomPopAux (m-1) q
+randomPopAux :: Int -> Int -> IO [Gene]
+randomPopAux 0 _ = return []
+randomPopAux m q =
+  do
+    subList <- randomPopAux (m-1) q
+    h <- randomGene [0..q-1]
+    return (h : subList)
 
 -- =====================================================================
 -- crossover functions
