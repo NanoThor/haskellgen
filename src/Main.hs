@@ -3,6 +3,7 @@ import Data.List
 import Control.Monad
 import Control.Monad.Random
 import Graph
+import Cross
 
 import Data.List
 import Data.Tuple
@@ -67,7 +68,7 @@ roleta' [] _= error "Erro!"
 roleta' ((g, c):as) r
   | r <= c = g
   | otherwise = roleta' (as) (r - c)
-    
+
 
 
 -- =====================================================================
@@ -134,11 +135,11 @@ getPivot :: Int -> IO Int
 getPivot l = do x <- getRandom'
                 return $ round (x* fromIntegral l)
 
-crossover :: Gene -> Gene -> IO (Gene, Gene)
-crossover l1 l2 =
-  do
-    s <- getPivot (length l1)
-    return (cross s l1 l2 , cross s l2 l1)
+-- crossover :: Gene -> Gene -> IO (Gene, Gene)
+-- crossover l1 l2 =
+--   do
+--     s <- getPivot (length l1)
+--     return (cross s l1 l2 , cross s l2 l1)
 
 cross :: Int -> Gene -> Gene -> Gene
 cross p str1 str2 = take p str1 ++ drop p str2
@@ -146,11 +147,40 @@ cross p str1 str2 = take p str1 ++ drop p str2
 -- =====================================================================
 -- MAIN
 -- =====================================================================
+
+-- TODO: INICIO DO LAÇO
 main :: IO ()
-main = return ()
+main = loopGenerationUtil
 
 
+-- TODO: GERA NOVA POPULAÇÃO DE GENES APLICANDO A ROLETA
+geraNovaPop :: Population -> Graph -> Int -> IO [Gene]
+geraNovaPop _ _ 0 = return []
+geraNovaPop p g s =
+  do
+    gene <- roleta p g
+    gene' <- geraNovaPop p g (s-1)
+    return (gene : gene')
 
+-- TODO: TENTA SIMULAR UM LOOP...TA TENDO UNS CONFLITOS, MAS ACHO QUE DÁ PRA SACAR A IDEIA....
+loopGenerationUtil :: IO Population -> Graph -> Int -> IO Population
+loopGenerationUtil p _ 0 = p
+loopGenerationUtil p g m =
+  do
+    popInicial <- p
+    rand0 <- mod randomIO ((length . head . genes) popInicial)
+    rand1 <- mod randomIO ((length . head . genes) popInicial)
+    let mutedGenes = mutaGenes (genes popInicial) rand0 rand1
+    let mutedPop = Population defaultPop mutedGenes
+    newGenes <- geraNovaPop mutedPop g (popSize defaultPop)
+    let newpop = (Population defaultPop newGenes)
+    nextGen <- loopGenerationUtil newpop g (m-1)
+    return nextGen
+
+-- TODO: MUTA TODOS OS GENES COM O NUMEROS RANDOMS GERADOS.
+mutaGenes :: [Gene] -> Int -> Int -> [Gene]
+mutaGenes [] _ _ = []
+mutaGenes (gh:gt) f0 f1 = muta gh f0 f1 : mutaGenes gt f0 f1
 
 -- main :: IO()
 -- main =
