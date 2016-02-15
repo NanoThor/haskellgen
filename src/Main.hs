@@ -77,7 +77,7 @@ roleta' ((g, c):as) r
 
 data PopInfo = PopInfo { popSize :: Int, crossoverFactor :: Float, elitism :: Float, mutation :: Float } deriving(Show, Eq)
 defaultPop :: PopInfo
-defaultPop = PopInfo 1024 0.8 0.1 0.03
+defaultPop = PopInfo 10 0.8 0.1 0.03
 
 data Population = Population {info :: PopInfo, genes :: [Gene]} deriving (Show, Eq)
 
@@ -171,7 +171,7 @@ loopGenerationUtil :: Population -> Graph -> Int -> IO Population
 loopGenerationUtil p _ 0 = return p
 loopGenerationUtil p g m =
   do
-    let geneSampleLenght = length(head(genes p))
+    let geneSampleLenght = length(head(genes p)) - 1
     r0 <- randomIO
     let rand0 = mod r0 geneSampleLenght
     r1 <- randomIO
