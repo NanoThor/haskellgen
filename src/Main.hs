@@ -1,4 +1,5 @@
 import System.Random
+import System.IO
 import Data.List
 import Control.Monad
 import Control.Monad.Random
@@ -153,8 +154,12 @@ main :: IO ()
 main = do
   graph <- loadGraphFromFile "graph.txt"
   startPop <- randomPop defaultPop graph
-  finalPop <- loopGenerationUtil startPop graph 100
-  print finalPop
+  let it = 1024
+  finalPop <- loopGenerationUtil startPop graph it
+  let geneRes = nub (genes finalPop)
+  let gene = head geneRes
+  appendFile "MenoresCaminhos.txt" ("Populacao: "++ (show. popSize . info) finalPop ++ " | " ++show gene ++ " Geracoes: " ++ show it ++ "\n")
+  print $ geneRes
 
 
 -- TODO: GERA NOVA POPULAÇÃO DE GENES APLICANDO A ROLETA

@@ -25,6 +25,7 @@ cross g1 g2 r1 r2 = xs
 -- Gene a ser mutado, dois numeros randomicos (se os numeros são iguais, não faz nada)
 muta :: [Int] -> Int -> Int -> [Int]
 muta l x y
+ | x > y = muta l y x
  | x /= y =
    let (l1, l2h:l2t, l3h:l3t) = slice x y l
     in l1 ++ (l3h : l2t) ++ (l2h : l3t)
@@ -42,4 +43,3 @@ pSize (a:b:xs) g =
  case xs of
   [] -> getVal a b g
   xs -> pSize (b : xs) g + getVal a b g
-
