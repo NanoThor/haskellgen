@@ -31,12 +31,43 @@ randomGene v =
     x <- randomGene (le ++ tail ld)
     return (head ld : x)
 
-fitness :: Gene -> Graph -> Int
-fitness gene graph = fitaux (startVertice graph) gene graph
+-- fazer o fitness
 
-fitaux :: Int -> Gene -> Graph -> Int
-fitaux v [] graph = getEdgeValue v (startVertice graph) graph
-fitaux v gene graph = getEdgeValue v (head gene) graph + fitaux (head gene) (tail gene) graph
+percurseSize :: Gene -> Graph -> Int
+percurseSize (gh:gt) graph = percurseSize' gh (gh:gt) graph
+
+percurseSize' :: Int -> Gene -> Graph -> Int
+percurseSize' _ [] _            = error "Gene não deve ser []"
+percurseSize' a [n] graph       = getEdgeValue a n graph
+percurseSize' a (n1:n2:r) graph = getEdgeValue n1 n2 graph + percurseSize' a (n2:r) graph
+
+fitness :: Gene -> Population -> Graph -> Float
+fitness g p graph =
+   let
+     r = foldr (+) 0 $ map (flip percurseSize graph) (genes p)
+     s = percurseSize g graph
+   in fromIntegral s / fromIntegral r
+
+somaTodosOsTamanhosDeRotaNaPopulacao :: Population -> Graph-> Int
+somaTodosOsTamanhosDeRotaNaPopulacao p graph = foldr (+) 0 $ map (flip percurseSize graph) (genes p)
+
+roleta :: Population -> Graph -> IO Gene
+roleta pop graph =
+  do
+    r <- getRandom'
+--    print r
+    let
+      l = map (\g -> (g ,fitness g pop graph)) (genes pop)
+--    print l
+    return (roleta' l r)
+
+roleta' :: [(Gene, Float)] -> Float -> Gene
+roleta' [] _= error "Erro!"
+roleta' ((g, c):as) r
+  | r <= c = g
+  | otherwise = roleta' (as) (r - c)
+    
+
 
 -- =====================================================================
 -- Population Stuffs
@@ -49,10 +80,9 @@ defaultPop = PopInfo 1024 0.8 0.1 0.03
 data Population = Population {info :: PopInfo, genes :: [Gene]} deriving (Show, Eq)
 
 -- ==============================
-randomPop :: PopInfo -> IO Graph -> IO Population
-randomPop pinfo graph =
+randomPop :: PopInfo -> Graph -> IO Population
+randomPop pinfo g =
   do
-    g <- graph
     genePopulation <- randomPopAux (popSize pinfo) (vcount g)
     return (Population pinfo genePopulation)
 
@@ -74,11 +104,11 @@ randomPopAux m q =
 -- -- ==============================
 -- naturalSelection :: Population -> Population
 -- naturalSelection pop =
-
+{-
 natSelFitList :: [Gene] -> Graph -> [(Gene,Int)]
 natSelFitList [] _ = []
 natSelFitList (x:xs) g = (x, fitness x g) : natSelFitList xs g
-
+-}
 -- TODO: aqui seria pra retornar genes mais fortes. Ainda não tá dropando metade da lista. Fazer isso.
 killWeakGenes :: [(Gene,Int)] -> [Gene]
 killWeakGenes [] = []
