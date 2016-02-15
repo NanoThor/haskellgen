@@ -150,7 +150,11 @@ cross p str1 str2 = take p str1 ++ drop p str2
 
 -- TODO: INICIO DO LAÇO
 main :: IO ()
-main = loopGenerationUtil
+main = do
+  graph <- loadGraphFromFile "graph.txt"
+  startPop <- randomPop defaultPop graph
+  finalPop <- loopGenerationUtil startPop graph 100
+  print finalPop
 
 
 -- TODO: GERA NOVA POPULAÇÃO DE GENES APLICANDO A ROLETA
@@ -163,14 +167,16 @@ geraNovaPop p g s =
     return (gene : gene')
 
 -- TODO: TENTA SIMULAR UM LOOP...TA TENDO UNS CONFLITOS, MAS ACHO QUE DÁ PRA SACAR A IDEIA....
-loopGenerationUtil :: IO Population -> Graph -> Int -> IO Population
-loopGenerationUtil p _ 0 = p
+loopGenerationUtil :: Population -> Graph -> Int -> IO Population
+loopGenerationUtil p _ 0 = return p
 loopGenerationUtil p g m =
   do
-    popInicial <- p
-    rand0 <- mod randomIO ((length . head . genes) popInicial)
-    rand1 <- mod randomIO ((length . head . genes) popInicial)
-    let mutedGenes = mutaGenes (genes popInicial) rand0 rand1
+    let geneSampleLenght = length(head(genes p))
+    r0 <- randomIO
+    let rand0 = mod r0 geneSampleLenght
+    r1 <- randomIO
+    let rand1 = mod r1 geneSampleLenght
+    let mutedGenes = mutaGenes (genes p) rand0 rand1
     let mutedPop = Population defaultPop mutedGenes
     newGenes <- geraNovaPop mutedPop g (popSize defaultPop)
     let newpop = (Population defaultPop newGenes)
