@@ -44,9 +44,10 @@ percurseSize' a (n1:n2:r) graph = getEdgeValue n1 n2 graph + percurseSize' a (n2
 fitness :: Gene -> Population -> Graph -> Float
 fitness g p graph =
    let
-     r = foldr (+) 0 $ map (flip percurseSize graph) (genes p)
-     s = percurseSize g graph
-   in fromIntegral s / fromIntegral r
+     r = somaTodosOsTamanhosDeRotaNaPopulacao p graph
+     s = r - (percurseSize g graph)
+     l = length $ genes p
+   in fromIntegral s / fromIntegral (r * (l -1))
 
 somaTodosOsTamanhosDeRotaNaPopulacao :: Population -> Graph-> Int
 somaTodosOsTamanhosDeRotaNaPopulacao p graph = foldr (+) 0 $ map (flip percurseSize graph) (genes p)
