@@ -10,7 +10,6 @@ import Graph
 
 
 
-
 -- =====================================================================
 -- Gene Stuffs
 -- =====================================================================
@@ -39,14 +38,25 @@ fitaux v gene graph = getEdgeValue v (head gene) graph + fitaux (head gene) (tai
 -- Population Stuffs
 -- =====================================================================
 
-data PopInfo = PopInfo { size :: Int, crossoverFactor :: Float, elitism :: Float, mutation :: Float }
+data PopInfo = PopInfo { popSize :: Int, crossoverFactor :: Float, elitism :: Float, mutation :: Float } deriving(Show, Eq)
 defaultPop :: PopInfo
 defaultPop = PopInfo 1024 0.8 0.1 0.03
 
-data Population = Population {info :: PopInfo, genes :: [Gene]}
+data Population = Population {info :: PopInfo, genes :: [IO Gene]}
 
--- randomPop :: PopInfo -> IO Population
--- randomPop pinfo = Population pinfo
+randomPop :: PopInfo -> Graph -> Population
+randomPop pinfo graph =
+  let
+    genePopulation = randomPopAux (popSize pinfo) (vcount graph)
+  in
+    Population pinfo genePopulation
+
+-- q : Quantidade :: Int
+-- m : Maximo :: Int
+-- retorno : Lista de Genes Gerados :: [Gene]
+randomPopAux :: Int -> Int -> [IO Gene]
+randomPopAux 0 _ = []
+randomPopAux m q = (randomGene [0..(q-1)]) : randomPopAux (m-1) q
 
 -- =====================================================================
 -- crossover functions
@@ -75,6 +85,7 @@ cross p str1 str2 = take p str1 ++ drop p str2
 -- =====================================================================
 main :: IO ()
 main = return ()
+
 
 
 
