@@ -4,6 +4,10 @@ import Control.Monad
 import Control.Monad.Random
 import Graph
 
+import Data.List
+import Data.Tuple
+import Data.Function
+
 -- =====================================================================
 -- Graph Stuffs
 -- =====================================================================
@@ -44,10 +48,12 @@ defaultPop = PopInfo 1024 0.8 0.1 0.03
 
 data Population = Population {info :: PopInfo, genes :: [Gene]} deriving (Show, Eq)
 
-randomPop :: PopInfo -> Graph -> IO Population
+-- ==============================
+randomPop :: PopInfo -> IO Graph -> IO Population
 randomPop pinfo graph =
   do
-    genePopulation <- randomPopAux (popSize pinfo) (vcount graph)
+    g <- graph
+    genePopulation <- randomPopAux (popSize pinfo) (vcount g)
     return (Population pinfo genePopulation)
 
 -- q : Quantidade :: Int
@@ -60,6 +66,29 @@ randomPopAux m q =
     subList <- randomPopAux (m-1) q
     h <- randomGene [0..q-1]
     return (h : subList)
+-- ==============================
+
+
+
+-- TODO: Ainda não testei essa funções. Seria interessante ver se tá certo. Já teria meio caminho andado.
+-- -- ==============================
+-- naturalSelection :: Population -> Population
+-- naturalSelection pop =
+
+natSelFitList :: [Gene] -> Graph -> [(Gene,Int)]
+natSelFitList [] _ = []
+natSelFitList (x:xs) g = (x, fitness x g) : natSelFitList xs g
+
+-- TODO: aqui seria pra retornar genes mais fortes. Ainda não tá dropando metade da lista. Fazer isso.
+killWeakGenes :: [(Gene,Int)] -> [Gene]
+killWeakGenes [] = []
+killWeakGenes list =
+  let
+    sortedList = sortBy (compare `on` snd) list
+    killedList = map (\(x,_) -> x) sortedList
+  in killedList
+
+-- -- ==============================
 
 -- =====================================================================
 -- crossover functions
